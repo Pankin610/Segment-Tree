@@ -1,7 +1,3 @@
-//
-// Created by Pavel Sankin on 04.02.2021.
-//
-
 #ifndef SEGMENTTREE_SEGMENTTREE_H
 #define SEGMENTTREE_SEGMENTTREE_H
 
@@ -18,8 +14,6 @@ namespace algo {
       std::shared_ptr<TreeNode> left_son = nullptr;
       std::shared_ptr<TreeNode> right_son = nullptr;
       TreeNode* ancestor;
-      // segment borders corresponding to this node
-      int l = 0, r = 0;
 
       void Update() {
         if (!left_son && !right_son) {
@@ -43,19 +37,13 @@ namespace algo {
         }
       }
       void CreateRightSon() {
-        if (l == r) {
-          return;
-        }
         if (!right_son) {
-          right_son.reset(new TreeNode(this, (l + r) / 2 + 1, r));
+          right_son.reset(new TreeNode(this));
         }
       }
       void CreateLeftSon() {
-        if (l == r) {
-          return;
-        }
         if (!left_son) {
-          left_son.reset(new TreeNode(this, l, (l + r) / 2));
+          left_son.reset(new TreeNode(this));
         }
       }
       // constant reference constructor
@@ -63,25 +51,19 @@ namespace algo {
               data(node.data),
               left_son(node.left_son),
               right_son(node.right_son),
-              ancestor(node.ancestor),
-              l(node.l),
-              r(node.r)  {}
+              ancestor(node.ancestor) {}
       // std::move constructor
       TreeNode(TreeNode&& node) {
         data = std::move(node.data);
-        l = node.l;
-        r = node.r;
         // pointer reassignment
         left_son.reset(node.left_son);
         right_son.reset(node.right_son);
         ancestor = node.ancestor;
         node.left_son.reset();
         node.right_son.reset();
-        node.ancestor.reset();
       }
-      // initialize with an ancestor and a segment
-      TreeNode(TreeNode* anc, int l_, int r_) :
-              ancestor(anc), l(l_), r(r_) {};
+      // initialize with an ancestor
+      TreeNode(TreeNode* anc) : ancestor(anc) {};
       TreeNode() = default;
     public:
       ~TreeNode() {
@@ -90,7 +72,7 @@ namespace algo {
       }
       friend class SegmentTree;
     public:
-      // Assigning new data values to the node
+      // Assigning a new data value to the node
       TreeNode& operator=(const T& new_data) {
         data = new_data;
         UpdateAncestors();
@@ -102,16 +84,19 @@ namespace algo {
       }
     };
     std::shared_ptr<TreeNode> root;
-    // getting a value on a segment
-    T Get(TreeNode* node, int req_l, int req_r) {
-      if (!node || node->l > req_r || node->r < req_l) {
+    int l_border = 0;
+    int r_border = 0;
+    // getting a segment's union
+    T Get(TreeNode* node, int l, int r, int req_l, int req_r) {
+      if (!node || l > req_r || r < req_l) {
         return default_value;
       }
-      if (node->l >= req_l && node->r <= req_r) {
+      if (l >= req_l && r <= req_r) {
         return node->data;
       }
-      return Union(Get(node->left_son.get(), req_l, req_r),
-                   Get(node->right_son.get(), req_l, req_r));
+      int mid = (l + r) / 2;
+      return Union(Get(node->left_son.get(), l, mid, req_l, req_r),
+                   Get(node->right_son.get(), mid + 1, r, req_l, req_r));
     }
 
   public:
@@ -121,29 +106,33 @@ namespace algo {
         throw "Invalid segment";
       }
       root.reset(new TreeNode());
-      root->l = l;
-      root->r = r;
+      l_border = l;
+      r_border = r;
     }
     ~SegmentTree() {
       root.reset();
     }
     TreeNode& operator[](int index) {
       TreeNode* current_node = root.get();
-      while (current_node->l != index || current_node->r != index) {
-        int mid = (current_node->l + current_node->r) / 2;
+      int l = l_border;
+      int r = r_border;
+      while (l != index || r != index) {
+        int mid = (l + r) / 2;
         if (mid >= index) {
           current_node->CreateLeftSon();
           current_node = current_node->left_son.get();
+	  r = mid;
         }
         else {
           current_node->CreateRightSon();
           current_node = current_node->right_son.get();
+	  l = mid + 1;
         }
       }
       return *current_node;
     }
     T Get(int l, int r) {
-      return Get(root.get(), l, r);
+      return Get(root.get(), l_border, r_border, l, r);
     }
   };
 
