@@ -98,6 +98,7 @@ namespace algo {
       TreeNode& operator=(T&& new_data) {
         data = std::move(new_data);
         UpdateAncestors();
+	return *this;
       }
     };
     std::shared_ptr<TreeNode> root;
@@ -124,31 +125,8 @@ namespace algo {
       root->r = r;
     }
     ~SegmentTree() {
-      TreeNode* v = root.get();
-
-      // going over the tree with a cycle to avoid recursion
-      while(v->left_son || v->right_son ||
-            v->ancestor) {
-        // first delete all the sons
-        if (v->left_son) {
-          v = v->left_son.get();
-          continue;
-        }
-        if (v->right_son) {
-          v = v->right_son.get();
-          continue;
-        }
-        v = v->ancestor;
-        if (v->left_son) {
-          v->left_son.reset();
-        }
-        else {
-          v->right_son.reset();
-        }
-      }
       root.reset();
     }
-
     TreeNode& operator[](int index) {
       TreeNode* current_node = root.get();
       while (current_node->l != index || current_node->r != index) {
