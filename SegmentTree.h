@@ -46,12 +46,23 @@ namespace algo {
           left_son.reset(new TreeNode(this));
         }
       }
-      // constant reference constructor
+      // as default the copy is simple
       TreeNode(const TreeNode& node) :
               data(node.data),
               left_son(node.left_son),
               right_son(node.right_son),
               ancestor(node.ancestor) {}
+      // but this copies the entire subtree
+      static TreeNode* StrictCopy(const TreeNode& other) {
+        TreeNode* result = new TreeNode(other.data);
+        if (other.left_son) {
+          result->left_son.reset(StrictCopy(*other.left_son));
+	}
+	if (other.right_son) {
+          result->right_son.reset(StrictCopy(*other.right_son));
+	}
+	return result;
+      }
       // std::move constructor
       TreeNode(TreeNode&& node) {
         data = std::move(node.data);
@@ -59,12 +70,13 @@ namespace algo {
         left_son.reset(node.left_son);
         right_son.reset(node.right_son);
         ancestor = node.ancestor;
-        node.left_son.reset();
-        node.right_son.reset();
       }
       // initialize with an ancestor
       TreeNode(TreeNode* anc) : ancestor(anc) {};
       TreeNode() = default;
+      explicit TreeNode(const T& data_init) {
+        data = data_init;
+      }
     public:
       ~TreeNode() {
         left_son.reset();
@@ -109,8 +121,18 @@ namespace algo {
       l_border = l;
       r_border = r;
     }
+    SegmentTree(const SegmentTree& other) {
+      root.reset(TreeNode::StrictCopy(*other.root));
+      l_border = other.l_border;
+      r_border = other.r_border;
+    }
     ~SegmentTree() {
       root.reset();
+    }
+    SegmentTree& operator=(const SegmentTree& other) {
+      root.reset();
+      new (this) SegmentTree(other);
+      return *this;
     }
     TreeNode& operator[](int index) {
       TreeNode* current_node = root.get();
