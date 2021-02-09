@@ -9,6 +9,7 @@
 namespace algo {
   template<typename T, T(*Union)(T, T), T default_value = T()>
   class SegmentTree {
+    protected:
     class TreeNode {
       T data = default_value;
       std::shared_ptr<TreeNode> left_son = nullptr;
@@ -38,20 +39,22 @@ namespace algo {
       }
       void CreateRightSon() {
         if (!right_son) {
-          right_son.reset(new TreeNode(this));
+          right_son.reset(new TreeNode(this, false));
         }
       }
       void CreateLeftSon() {
         if (!left_son) {
-          left_son.reset(new TreeNode(this));
+          left_son.reset(new TreeNode(this, true));
         }
       }
+      bool const is_left_son = false;
       // as default the copy is simple
       TreeNode(const TreeNode& node) :
               data(node.data),
               left_son(node.left_son),
               right_son(node.right_son),
-              ancestor(node.ancestor) {}
+              ancestor(node.ancestor),
+	      is_left_son(node.is_left_son) {}
       // but this copies the entire subtree
       static TreeNode* StrictCopy(const TreeNode& other) {
         TreeNode* result = new TreeNode(other.data);
@@ -66,13 +69,16 @@ namespace algo {
       // std::move constructor
       TreeNode(TreeNode&& node) {
         data = std::move(node.data);
+	is_left_son = node.is_left_son;
         // pointer reassignment
         left_son.reset(node.left_son);
         right_son.reset(node.right_son);
         ancestor = node.ancestor;
       }
       // initialize with an ancestor
-      TreeNode(TreeNode* anc) : ancestor(anc) {};
+      TreeNode(TreeNode* anc, bool is_left) : 
+              ancestor(anc),
+	      is_left_son(is_left) {}
       TreeNode() = default;
       explicit TreeNode(const T& data_init) {
         data = data_init;
@@ -82,24 +88,24 @@ namespace algo {
         left_son.reset();
         right_son.reset();
       }
-      friend class SegmentTree;
-    public:
       // Assigning a new data value to the node
       TreeNode& operator=(const T& new_data) {
         data = new_data;
         UpdateAncestors();
+	return *this;
       }
       TreeNode& operator=(T&& new_data) {
         data = std::move(new_data);
         UpdateAncestors();
 	return *this;
       }
+      friend class SegmentTree;
     };
     std::shared_ptr<TreeNode> root;
     int l_border = 0;
     int r_border = 0;
     // getting a segment's union
-    T Get(TreeNode* node, int l, int r, int req_l, int req_r) {
+    T Get(TreeNode* node, int l, int r, int req_l, int req_r) const {
       if (!node || l > req_r || r < req_l) {
         return default_value;
       }
@@ -153,11 +159,10 @@ namespace algo {
       }
       return *current_node;
     }
-    T Get(int l, int r) {
+    T Get(int l, int r) const {
       return Get(root.get(), l_border, r_border, l, r);
     }
   };
-
 };
 // namespace algo
 
