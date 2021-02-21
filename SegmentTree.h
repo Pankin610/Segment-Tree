@@ -11,6 +11,9 @@ namespace algo {
   class SegmentTree {
     protected:
     class TreeNode {
+      friend class Iterator;
+      friend class SegmentTree;
+
       T data = default_value;
       std::shared_ptr<TreeNode> left_son = nullptr;
       std::shared_ptr<TreeNode> right_son = nullptr;
@@ -102,6 +105,44 @@ namespace algo {
       }
       friend class SegmentTree;
     };
+
+    /* The iterator allows the user to efficiently iterate through
+       all the defined elements in the segment tree.
+       Iterating through all the elements will work in O(n), where
+       n is the amount of nodes in the tree.
+       If the tree is fully defined n will equal at most twice
+       the amount of elements in the tree. */
+    class Iterator : public std::iterator<std::input_iterator_tag, T> {
+      friend class SegmentTree;
+     private:
+      TreeNode* node;
+      Iterator(TreeNode* node_ptr) : node(node_ptr) {}
+     public:
+      typename Iterator::reference operator*() const {
+        return node->data;
+      }
+      Iterator& operator++() {
+        while(!node->is_left_son || !node->ancestor->right_son) {
+          if (!node->ancestor) {
+            node = nullptr;
+            return *this;
+          }
+          node = node->ancestor;
+        }
+        node = node->ancestor;
+        node = node->right_son.get();
+        while(node->left_son) {
+          node = node->left_son.get();
+        }
+        return *this;
+      }
+      bool operator==(const Iterator& other) const {
+        return node == other.node;
+      }
+      bool operator!=(const Iterator& other) const {
+        return node != other.node; 
+      }
+    };
     std::shared_ptr<TreeNode> root;
     int l_border = 0;
     int r_border = 0;
@@ -150,7 +191,7 @@ namespace algo {
         if (mid >= index) {
           current_node->CreateLeftSon();
           current_node = current_node->left_son.get();
-	  r = mid;
+	        r = mid;
         }
         else {
           current_node->CreateRightSon();
@@ -163,6 +204,21 @@ namespace algo {
     T Get(int l, int r) const {
       return Get(root.get(), l_border, r_border, l, r);
     }
+    Iterator end() {
+      return Iterator(nullptr);
+    }
+    Iterator begin() {
+      if (root->left_son) {
+        TreeNode* v = root.get();
+        while(v->left_son) {
+          v = v->left_son.get();
+        }
+        return Iterator(v);
+      }
+      else {
+        return Iterator(nullptr);
+      }
+    }    
   };
 };
 // namespace algo
