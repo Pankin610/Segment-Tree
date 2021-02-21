@@ -1,5 +1,5 @@
-#ifndef SEGMENTTREE_SEGMENTTREE_H
-#define SEGMENTTREE_SEGMENTTREE_H
+#ifndef SEGMENTTREE_H_
+#define SEGMENTTREE_H_
 
 #include <algorithm>
 #include <memory>
@@ -54,36 +54,37 @@ namespace algo {
               left_son(node.left_son),
               right_son(node.right_son),
               ancestor(node.ancestor),
-	      is_left_son(node.is_left_son) {}
+              is_left_son(node.is_left_son) {}
       // but this copies the entire subtree
       static TreeNode* StrictCopy(const TreeNode& other) {
         TreeNode* result = new TreeNode(other.data);
         if (other.left_son) {
           result->left_son.reset(StrictCopy(*other.left_son));
-	}
-	if (other.right_son) {
+        }
+        if (other.right_son) {
           result->right_son.reset(StrictCopy(*other.right_son));
-	}
-	return result;
+        }
+        return result;
       }
       // std::move constructor
       TreeNode(TreeNode&& node) {
         data = std::move(node.data);
-	is_left_son = node.is_left_son;
+        is_left_son = node.is_left_son;
         // pointer reassignment
         left_son.reset(node.left_son);
         right_son.reset(node.right_son);
         ancestor = node.ancestor;
       }
       // initialize with an ancestor
-      TreeNode(TreeNode* anc, bool is_left) : 
+      TreeNode(TreeNode* anc, bool is_left) :
               ancestor(anc),
-	      is_left_son(is_left) {}
+              is_left_son(is_left) {}
       TreeNode() = default;
       explicit TreeNode(const T& data_init) {
         data = data_init;
       }
-    public:
+
+     public:
       ~TreeNode() {
         left_son.reset();
         right_son.reset();
@@ -92,12 +93,12 @@ namespace algo {
       TreeNode& operator=(const T& new_data) {
         data = new_data;
         UpdateAncestors();
-	return *this;
+        return *this;
       }
       TreeNode& operator=(T&& new_data) {
         data = std::move(new_data);
         UpdateAncestors();
-	return *this;
+        return *this;
       }
       friend class SegmentTree;
     };
@@ -154,7 +155,7 @@ namespace algo {
         else {
           current_node->CreateRightSon();
           current_node = current_node->right_son.get();
-	  l = mid + 1;
+          l = mid + 1;
         }
       }
       return *current_node;
@@ -166,4 +167,4 @@ namespace algo {
 };
 // namespace algo
 
-#endif //SEGMENTTREE_SEGMENTTREE_H
+#endif // SEGMENTTREE_SEGMENTTREE_H
